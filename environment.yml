@@ -1,0 +1,14 @@
+name: confopt
+channels:
+  - defaults
+  - conda-forge
+  - psi4
+dependencies:
+  - pytorch
+  - gpytorch
+  - botorch
+  - ase
+  - torchani
+  - xtb-python
+  - chemcoord
+  - numpy
