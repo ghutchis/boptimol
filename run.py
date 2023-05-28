@@ -16,9 +16,9 @@ logger = logging.getLogger('botimol')
 if __name__ == "__main__":
     # Parse the command line arguments
     parser = ArgumentParser()
-    parser.add_argument('--file', type=str,
+    parser.add_argument('file', type=str,
                         help='File containing the structure to optimize')
-    parser.add_argument('--energy', choices=['ani', 'b3lyp', 'b97',
+    parser.add_argument('-e', '--energy', choices=['ani', 'b3lyp', 'b97',
                         'gfn0', 'gfn2', 'gfnff'], default='gfn2', help='Energy method')
     args = parser.parse_args()
 
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     # Load the molecule
     molecule = Molecule(args.file, calc)
 
-    init_steps = 2
+    init_steps = 1
     n_steps = 100
     final_parameters = run_optimization(molecule, n_steps, init_steps,
                                    out_dir)

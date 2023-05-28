@@ -56,7 +56,7 @@ def select_next_points_botorch(bounds: torch.Tensor,
     gp = SingleTaskGP(train_X, train_y,
         covar_module=gpykernels.ScaleKernel(gpykernels.ProductStructureKernel(
         num_dims=train_X.shape[1],
-        base_kernel=gpykernels.RBFKernel()
+        base_kernel=gpykernels.MaternKernel()
     )))
     mll = ExactMarginalLogLikelihood(gp.likelihood, gp).to(device=device)
     fit_gpytorch_mll(mll)
@@ -65,8 +65,9 @@ def select_next_points_botorch(bounds: torch.Tensor,
     n_sampled, n_dim = train_X.shape
     # TODO: compare different acquisition functions
     # - for example kappa parameter for UCB
-    #aq = UpperConfidenceBound(gp, kappa)
-    aq = ExpectedImprovement(gp, best_f=torch.max(train_y), maximize=True)
+    kappa = 0.01
+    aq = UpperConfidenceBound(gp, kappa)
+    #aq = ExpectedImprovement(gp, best_f=torch.max(train_y), maximize=True)
     # q=1 means we only pick one point - TODO: try q>1
     candidate, acq_value = optimize_acqf(
         aq, 
@@ -101,9 +102,8 @@ def run_optimization(mol: Molecule,
     # Begin a structure log, if output available
     if out_dir is not None:
         log_path = out_dir.joinpath('structures.csv')
-        ens_path = out_dir.joinpath('ensemble.xyz')
         with log_path.open('w') as fp:
-            writer = DictWriter(fp, ['time', 'xyz', 'energy', 'ediff'])
+            writer = DictWriter(fp, ['time', 'coords', 'energy', 'ediff'])
             writer.writeheader()
 
         def add_entry(coords, energy):
@@ -121,7 +121,7 @@ def run_optimization(mol: Molecule,
 
     # Make some initial guesses
     # TODO: make this a function and make better guesses
-    init_guesses = np.random.normal(start_coords, 0.5, size=(init_steps, len(start_coords)))
+    init_guesses = np.random.normal(start_coords, 0.1, size=(init_steps, len(start_coords)))
     init_energies = []
     for i, guess in enumerate(init_guesses):
         energy = mol.energy(guess)
@@ -135,7 +135,7 @@ def run_optimization(mol: Molecule,
     observed_coords = np.array([start_coords, *init_guesses.tolist()])
     observed_energies = [0.] + init_energies
 
-    bounds = torch.tensor(mol.bounds.T, dtype=torch.float64)
+    bounds = torch.tensor(mol.bounds, dtype=torch.float64)
 
     # Loop over many steps
     best_energy = np.min(observed_energies)
@@ -158,6 +158,7 @@ def run_optimization(mol: Molecule,
         # Update the search space
         observed_coords = np.vstack([observed_coords, next_coords])
         observed_energies.append(energy - start_energy)
+        best_energy = np.min(observed_energies)
 
         # Check for convergence
         # TODO: check for RMSD of the parameters

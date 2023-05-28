@@ -22,6 +22,6 @@ mamba env create --file environment.yml --force
 `run.py` provides a simple interface to the code. To optimize cysteine with default arguments. For now, the code expects molecules in XYZ format.
 
 ```bash
-python run.py cysteine.xyz
+python run.py test/molecules/peroxide.xyz
 ```
 

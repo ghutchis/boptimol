@@ -71,19 +71,31 @@ class Molecule:
         self.end_angles = self.end_bonds + len(self.angles)
 
         # get the bounds for the current parameters
-        # TODO: this should be a function of the molecule
-        # .. e.g., only a bit smaller and larger than the current
+        # right now, this gives bounds based on the current
+        #  .. geometry with a trust range
 
         # TODO: adjust this based on bond elements / types
-        bond_bounds = np.array([[0.6, 2.5]] * len(self.bonds))
-        # TODO: ditto for angles (i.e., a bit shorter and longer)
-        angle_bounds = np.array([[60.0, 180.0]] * len(self.angles))
-        # TODO: consider for dihedrals
-        dihedral_bounds = np.array([[-180.0, 180.0]] * len(self.dihedrals))
+        degrees_of_freedom = self.end_angles + len(self.dihedrals)
+
+        lower_bounds = np.zeros(degrees_of_freedom)
+        upper_bounds = np.zeros(degrees_of_freedom)
+
+        for i in range(self.end_bonds):
+            lower_bounds[i] = self.bonds[i] - 0.35
+            upper_bounds[i] = self.bonds[i] + 0.35
+
+        for i in range(self.end_bonds, self.end_angles):
+            idx = i - self.end_bonds
+            lower_bounds[i] = self.angles[idx] - 10.0
+            upper_bounds[i] = self.angles[idx] + 10.0
+
+        for i in range(self.end_angles, degrees_of_freedom):
+            idx = i - self.end_angles
+            lower_bounds[i] = self.dihedrals[idx] - 30.0
+            upper_bounds[i] = self.dihedrals[idx] + 30.0
 
         # stack the bounds to 2 x n array
-        self._bounds = np.vstack((bond_bounds, angle_bounds, dihedral_bounds))
-
+        self._bounds = np.vstack((lower_bounds, upper_bounds))
 
     @property
     def parameters(self) -> np.ndarray:
@@ -97,6 +109,10 @@ class Molecule:
         """
 
         # stack the parameters
+        self.bonds = self.zmat.iloc[1:,2].to_numpy()
+        self.angles = self.zmat.iloc[2:,4].to_numpy()
+        self.dihedrals = self.zmat.iloc[3:,6].to_numpy()
+
         return np.hstack((self.bonds, self.angles, self.dihedrals))
     
     def set_parameters(self, parameters: np.ndarray) -> None:
