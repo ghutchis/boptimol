@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 import numpy as np
+import ase
 
 from boptimol.molecule import Molecule
 from boptimol.solver import run_optimization
@@ -14,6 +15,7 @@ from boptimol.solver import run_optimization
 logger = logging.getLogger('botimol')
 
 if __name__ == "__main__":
+    
     # Parse the command line arguments
     parser = ArgumentParser()
     parser.add_argument('file', type=str,
@@ -70,6 +72,7 @@ if __name__ == "__main__":
     # Load the molecule
     molecule = Molecule(args.file, calc)
 
+    #No. of steps need to be determine by convergence -> TODO
     init_steps = 1
     n_steps = 100
     final_parameters = run_optimization(molecule, n_steps, init_steps,

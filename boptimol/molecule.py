@@ -7,8 +7,9 @@ from ase import Atoms
 import chemcoord as cc
 import numpy as np
 
+
 class Molecule:
-    """Track the internal and Cartesian coordinates of a molecule
+    """ Track the internal and Cartesian coordinates of a molecule
         during optimization.
 
         At the moment, this uses chemcoord to convert between
@@ -47,13 +48,15 @@ class Molecule:
             self.zmat = cc.ZMatrix.read_zmat(filename)
             self.xyz = self.zmat.get_cartesian()
 
-        # store the ASE atoms object
+        # Store the ASE atoms object
         self.atoms = Atoms(self.xyz['atom'].to_list(), 
                            positions=self.xyz[['x','y','z']].to_numpy())
         
-        # TODO: set total charge and spin multiplicity
+        # Set total charge and spin multiplicity
+        self.charge = np.sum(self.atoms.get_initial_charges())
+        self.mult = self.atoms.get_initial_magnetic_moments().sum() + 1
 
-        # Set the energy calculator.
+        #Set the energy calculator.
         if calculator is None:
             raise ValueError("Energy calculator must be provided")
         
@@ -61,7 +64,10 @@ class Molecule:
         self.atoms.calc = self.calculator
 
         # build up the arrays
-        # element, atom idx, length, atom idx, angle, idx, dihedral
+        # ZMatrix format -> element, atom idx, length, atom idx, angle, idx, dihedral
+        self.element = self.atoms.get_chemical_formula(mode='all').split()
+        self.atom_idx = enumerate(self.atoms.get_chemical_formula(mode='all').split())
+        
         self.bonds = self.zmat.iloc[1:,2].to_numpy()
         self.angles = self.zmat.iloc[2:,4].to_numpy()
         self.dihedrals = self.zmat.iloc[3:,6].to_numpy()
@@ -79,9 +85,12 @@ class Molecule:
 
         lower_bounds = np.zeros(degrees_of_freedom)
         upper_bounds = np.zeros(degrees_of_freedom)
-
+        
+        getElement = lambda idx: (self.zmat['atom'][idx], 
+                                  self.zmat['atom'][self.zmat['b'][idx]])       
+        
         for i in range(self.end_bonds):
-            lower_bounds[i] = self.bonds[i] - 0.35
+            lower_bounds[i] = self.bonds[i] - 0.35 # Alternative self.bonds[i]*0.1, same for dihedral, angle
             upper_bounds[i] = self.bonds[i] + 0.35
 
         for i in range(self.end_bonds, self.end_angles):
@@ -210,8 +219,10 @@ class Molecule:
     
         # return the forces
         forces = self.atoms.get_forces()
-        # TODO: convert to Cartesian
+        # TODO: convert to ZMatrix
+        
         return forces
+    
     
     def write_xyz(self, filename: str):
         """Write the current Cartesian coordinates to an XYZ file.
@@ -219,5 +230,4 @@ class Molecule:
         Args:
             filename (str): Name / path of the file to write.
         """
-
         self.xyz.to_xyz(filename)
