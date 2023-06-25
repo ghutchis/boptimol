@@ -1,4 +1,4 @@
-# BOptiMol
+# BoptMol
 
 This repo contains code for optimizing molecules using Bayesian optimization and quantum chemistry computations.
 
