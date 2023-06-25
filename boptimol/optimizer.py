@@ -58,6 +58,7 @@ def run_optimization(mol: Molecule, n_steps: int,
     logger.info(f'''Initial Coordinates: {start_coords} \n 
                 Computed initial energy: {start_energy}''')
     bounds = torch.tensor(mol.bounds, dtype=torch.float64)
+    print(f'Bounds: {bounds}')
 
     
     # Guessing internal structure (Active Learning)
@@ -71,7 +72,8 @@ def run_optimization(mol: Molecule, n_steps: int,
         # Make a new search space
         next_coords = select_next_points_botorch(bounds, 
                                                  observed_coords, 
-                                                 observed_energies)
+                                                 observed_energies,
+                                                 mol)
         
         energy = mol.energy(next_coords)
         logger.info(f'''Evaluated energy in step {step+1}/{n_steps}. 

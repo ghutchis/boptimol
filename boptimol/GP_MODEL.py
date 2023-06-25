@@ -9,13 +9,16 @@ from botorch.models import SingleTaskGP
 from botorch.fit import fit_gpytorch_mll
 from gpytorch.mlls import ExactMarginalLogLikelihood
 from gpytorch import kernels as gpykernels
+from gpytorch import means as gpymeans
 
+from boptimol.molecule import Molecule
 
 # TODO: add custom models for the GP
 
 def select_next_points_botorch( bounds: torch.Tensor,
         observed_X: List[List[float]], 
-        observed_y: List[float]) -> np.ndarray:
+        observed_y: List[float],
+        mol: Molecule) -> np.ndarray:
     
     """Generate the next sample to evaluate
 
@@ -43,11 +46,18 @@ def select_next_points_botorch( bounds: torch.Tensor,
     train_y = standardize(-1* train_y[:, None])
 
     # Setting up the GP
-    gp = SingleTaskGP(train_X, train_y,
-        covar_module=gpykernels.ScaleKernel(gpykernels.ProductStructureKernel(
-        num_dims=train_X.shape[1],
-        base_kernel=gpykernels.MaternKernel())))
+    kernel_a = gpykernels.ScaleKernel(gpykernels.RBFKernel(active_dims=np.arange(mol.end_bonds)))
+    kernel_b = gpykernels.ScaleKernel(gpykernels.RBFKernel(active_dims=np.arange(mol.end_bonds, mol.end_angles)))
     
+    kernel_c = gpykernels.ScaleKernel(gpykernels.ProductStructureKernel(
+                active_dims=np.arange(mol.end_angles, mol.degrees_of_freedom),
+                num_dims = train_X.shape[1],
+                base_kernel=gpykernels.PeriodicKernel()))
+    
+    covar_module = kernel_a + kernel_b + kernel_c
+    mean_module = gpymeans.ConstantMean(batch_shape=torch.Size())
+    gp = SingleTaskGP(train_X, train_y, covar_module=covar_module, mean_module=mean_module)
+
     mll = ExactMarginalLogLikelihood(gp.likelihood, gp).to(device=device)
     fit_gpytorch_mll(mll)
 

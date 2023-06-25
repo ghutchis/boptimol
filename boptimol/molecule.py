@@ -81,27 +81,39 @@ class Molecule:
         #  .. geometry with a trust range
 
         # TODO: adjust this based on bond elements / types
-        degrees_of_freedom = self.end_angles + len(self.dihedrals)
+        self.degrees_of_freedom = self.end_angles + len(self.dihedrals)
 
-        lower_bounds = np.zeros(degrees_of_freedom)
-        upper_bounds = np.zeros(degrees_of_freedom)
+        lower_bounds = np.zeros(self.degrees_of_freedom)
+        upper_bounds = np.zeros(self.degrees_of_freedom)
         
+        '''chemcoord helper functions'''
+        #getElements in a bond
         getElement = lambda idx: (self.zmat['atom'][idx], 
-                                  self.zmat['atom'][self.zmat['b'][idx]])       
+                                  self.zmat['atom'][self.zmat['b'][idx]])
+        
+        print(self.zmat)
         
         for i in range(self.end_bonds):
-            lower_bounds[i] = self.bonds[i] - 0.35 # Alternative self.bonds[i]*0.1, same for dihedral, angle
-            upper_bounds[i] = self.bonds[i] + 0.35
+            # Alternative self.bonds[i]*0.1, same for dihedral, angle
+            #lower_bounds[i] = self.bonds[i] - 0.35 
+            lower_bounds[i] = self.bonds[i]*0.9
+            upper_bounds[i] = self.bonds[i]*1.1
 
         for i in range(self.end_bonds, self.end_angles):
             idx = i - self.end_bonds
-            lower_bounds[i] = self.angles[idx] - 10.0
-            upper_bounds[i] = self.angles[idx] + 10.0
+            #lower_bounds[i] = self.angles[idx] - 10.0
+            lower_bounds[i] = self.angles[idx] * 0.85
+            upper_bounds[i] = self.angles[idx] * 1.15
 
-        for i in range(self.end_angles, degrees_of_freedom):
+        for i in range(self.end_angles, self.degrees_of_freedom):
             idx = i - self.end_angles
-            lower_bounds[i] = self.dihedrals[idx] - 30.0
-            upper_bounds[i] = self.dihedrals[idx] + 30.0
+            #lower_bounds[i] = self.dihedrals[idx] - self.angles[i -self.end_bonds]*0.4
+            if(self.dihedrals[idx]>0):
+                lower_bounds[i] = self.dihedrals[idx] *0.8
+                upper_bounds[i] = min(180, self.dihedrals[idx] *1.2)
+            else:
+                lower_bounds[i] = max(-180, self.dihedrals[idx] *1.2)
+                upper_bounds[i] = self.dihedrals[idx] *0.8
 
         # stack the bounds to 2 x n array
         self._bounds = np.vstack((lower_bounds, upper_bounds))
