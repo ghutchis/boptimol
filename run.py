@@ -2,6 +2,7 @@ import hashlib
 import json
 import logging
 import sys
+import os
 
 from argparse import ArgumentParser
 from pathlib import Path
@@ -34,6 +35,11 @@ if __name__ == "__main__":
     out_dir = Path(__file__).parent.joinpath(
         f'solutions/{name}-{args.energy}-{params_hash[-6:]}')
     out_dir.mkdir(parents=True, exist_ok=True)
+    
+    out_dir_2 = Path(__file__).parent.joinpath(
+        f'solutions/{name}-{args.energy}-{params_hash[-6:]}/training_loop')
+    out_dir_2.mkdir(parents=True, exist_ok=True)
+    
     with out_dir.joinpath('run_params.json').open('w') as fp:
         json.dump(args.__dict__, fp)
 

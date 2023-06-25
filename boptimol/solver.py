@@ -9,7 +9,7 @@ from typing import List, Optional
 from boptimol import Molecule
 import chemcoord as cc
 
-import torch
+import torch    
 
 from botorch.optim import optimize_acqf
 from botorch.acquisition.analytic import *
@@ -67,7 +67,6 @@ def select_next_points_botorch( bounds: torch.Tensor,
     # Solve the optimization problem
     n_sampled, n_dim = train_X.shape
     
-    # TODO: compare different acquisition functions - for example kappa parameter for UCB
     kappa = 0.05
     #aq = UpperConfidenceBound(gp, kappa)
     # aq = qAnalyticProbabilityOfImprovement(gp, best_f=torch.max(train_y))
@@ -92,10 +91,9 @@ def select_next_points_botorch( bounds: torch.Tensor,
     return candidate.detach().numpy()[0, :]
 
 
-def run_optimization(mol: Molecule,
-                     n_steps: int, 
-                     init_steps: int, 
-                     out_dir: Optional[Path]) -> np.ndarray:
+
+def run_optimization(mol: Molecule, n_steps: int, 
+                     init_steps: int, out_dir: Optional[Path]) -> np.ndarray:
     
     """Optimize the structure of a molecule by iteratively changing the dihedral angles
 
@@ -121,7 +119,7 @@ def run_optimization(mol: Molecule,
             writer = DictWriter(fp, ['time', 'coords', 'energy', 'ediff'])
             writer.writeheader()
 
-        def add_entry(coords, energy):
+        def add_entry(coords, energy, i):
             with log_path.open('a') as fp:
                 writer = DictWriter(fp, ['time', 'coords', 'energy', 'ediff'])
                 writer.writerow({
@@ -130,9 +128,9 @@ def run_optimization(mol: Molecule,
                     'energy': energy,
                     'ediff': energy - start_energy
                 })
-            mol.xyz.to_xyz('a.xyz')
+            mol.write_xyz(f'{out_dir}/training_loop/{i}.xyz')
 
-        add_entry(start_coords, start_energy)
+        add_entry(start_coords, start_energy, 0)
 
     # Making initial guesses for the molecule (Active Learning)
     def initial_guess():
@@ -147,7 +145,7 @@ def run_optimization(mol: Molecule,
         logger.info(f'Evaluated initial guess {i+1}/{init_steps}. Energy-E0: {energy-start_energy}')
 
         if out_dir is not None:
-            add_entry(guess, energy)
+            add_entry(guess, energy, f'Initial_{i}')
 
     # Save the initial guesses
     observed_coords = np.array([start_coords, *init_guesses.tolist()])
@@ -169,11 +167,11 @@ def run_optimization(mol: Molecule,
         if energy - start_energy < np.min(observed_energies) and out_dir is not None:
             filename = out_dir.joinpath(f'best_{step}.xyz')
             mol.set_parameters(next_coords)
-            mol.xyz.to_xyz(f'{step}.xyz')
+            mol.write_xyz(f'{out_dir}/training_loop/best_{step}.xyz')
 
         # Update the log
         if out_dir is not None:
-            add_entry(next_coords, energy)
+            add_entry(next_coords, energy, f'Optim_{step}')
 
         # Update the search space
         observed_coords = np.vstack([observed_coords, next_coords])
@@ -196,6 +194,6 @@ def run_optimization(mol: Molecule,
     # Write the final result
     filename = out_dir.joinpath(f'best.xyz')
     mol.set_parameters(best_coords)
-    mol.xyz.to_xyz(filename)
+    mol.write_xyz(filename)
     
     return best_coords
