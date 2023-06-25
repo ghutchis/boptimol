@@ -90,8 +90,7 @@ class Molecule:
         #getElements in a bond
         getElement = lambda idx: (self.zmat['atom'][idx], 
                                   self.zmat['atom'][self.zmat['b'][idx]])
-        
-        print(self.zmat)
+  
         
         for i in range(self.end_bonds):
             # Alternative self.bonds[i]*0.1, same for dihedral, angle

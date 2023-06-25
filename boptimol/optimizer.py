@@ -55,10 +55,9 @@ def run_optimization(mol: Molecule, n_steps: int,
     # Evaluate initial point
     start_coords = mol.parameters
     start_energy = mol.energy(start_coords)
-    logger.info(f'''Initial Coordinates: {start_coords} \n 
-                Computed initial energy: {start_energy}''')
+    logger.info(f'''Computed initial energy: {start_energy}''') #Initial Coordinates: {start_coords} \n 
+        
     bounds = torch.tensor(mol.bounds, dtype=torch.float64)
-    print(f'Bounds: {bounds}')
 
     
     # Guessing internal structure (Active Learning)
@@ -85,7 +84,7 @@ def run_optimization(mol: Molecule, n_steps: int,
         
         # Logging the structure is it's the current best
         if energy - start_energy < np.min(observed_energies) and out_dir is not None:
-            filename = out_dir.joinpath(f'/training_loop/best_{step}.xyz')
+            filename = out_dir.joinpath(f'/training_loop/best_{step+1}.xyz')
             mol.set_parameters(next_coords)
             mol.write_xyz(f'{out_dir}/training_loop/best_{step+1}.xyz')
 
@@ -96,7 +95,8 @@ def run_optimization(mol: Molecule, n_steps: int,
 
         # Check for convergence
         # TODO: check for RMSD of the parameters
-        # and cc.xyz_functions.isclose(,)
+        #if step>0 and cc.xyz_functions.isclose(observed_energies[step],observed_energies[step-1]):
+            
         if np.abs(energy - best_energy) < 1e-3:
             logger.info('Converged!')
             break
