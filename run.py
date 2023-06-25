@@ -11,7 +11,7 @@ import numpy as np
 import ase
 
 from boptimol.molecule import Molecule
-from boptimol.solver import run_optimization
+from boptimol.optimizer import run_optimization
 
 logger = logging.getLogger('botimol')
 
