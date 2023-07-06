@@ -2,18 +2,21 @@ import hashlib
 import json
 import logging
 import sys
+import os
 
 from argparse import ArgumentParser
 from pathlib import Path
 
 import numpy as np
+import ase
 
 from boptimol.molecule import Molecule
-from boptimol.solver import run_optimization
+from boptimol.optimizer import run_optimization
 
 logger = logging.getLogger('botimol')
 
 if __name__ == "__main__":
+    
     # Parse the command line arguments
     parser = ArgumentParser()
     parser.add_argument('file', type=str,
@@ -32,6 +35,11 @@ if __name__ == "__main__":
     out_dir = Path(__file__).parent.joinpath(
         f'solutions/{name}-{args.energy}-{params_hash[-6:]}')
     out_dir.mkdir(parents=True, exist_ok=True)
+    
+    out_dir_2 = Path(__file__).parent.joinpath(
+        f'solutions/{name}-{args.energy}-{params_hash[-6:]}/training_loop')
+    out_dir_2.mkdir(parents=True, exist_ok=True)
+    
     with out_dir.joinpath('run_params.json').open('w') as fp:
         json.dump(args.__dict__, fp)
 
@@ -70,6 +78,7 @@ if __name__ == "__main__":
     # Load the molecule
     molecule = Molecule(args.file, calc)
 
+    #No. of steps need to be determine by convergence -> TODO
     init_steps = 1
     n_steps = 100
     final_parameters = run_optimization(molecule, n_steps, init_steps,

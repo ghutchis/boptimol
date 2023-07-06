@@ -3,6 +3,7 @@ channels:
   - defaults
   - conda-forge
   - psi4
+  
 dependencies:
   - pytorch
   - gpytorch
@@ -10,5 +11,5 @@ dependencies:
   - ase
   - torchani
   - xtb-python
-  - chemcoord
   - numpy
+  - chemcoord
