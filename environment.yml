@@ -2,7 +2,8 @@ name: confopt
 channels:
   - defaults
   - conda-forge
-  - mcocdawc
+  - psi4
+  
 dependencies:
   - pytorch
   - gpytorch
@@ -11,3 +12,4 @@ dependencies:
   - torchani
   - xtb-python
   - numpy
+  - chemcoord
